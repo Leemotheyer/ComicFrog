@@ -59,6 +59,64 @@ function parseReleaseDate(text) {
   return '';
 }
 
+function cleanPublisher(text) {
+  if (!text) return '';
+  return text
+    .replace(/\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+\d{1,2},?\s+\d{4}$/i, '')
+    .replace(/\s*·.*$/, '')
+    .trim();
+}
+
+function extractPublisher($) {
+  let publisher = '';
+
+  $('.header-intro a').each((_, el) => {
+    const href = $(el).attr('href') || '';
+    if (href.startsWith('/comics/new-comics/')) return;
+
+    const text = cleanPublisher(getText($, el));
+    if (text) {
+      publisher = text;
+      return false;
+    }
+    return undefined;
+  });
+
+  if (!publisher) {
+    publisher = cleanPublisher(getText($, '.header-intro .publisher'));
+  }
+
+  return publisher;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function extractFromDocumentTitle($, issueTitle) {
+  const title = $('title').text().replace(/\s+/g, ' ').trim();
+  const cleaned = title
+    .replace(/\s*Reviews?\s*$/i, '')
+    .replace(/\s*\|\s*League of Comic Geeks.*$/i, '')
+    .trim();
+
+  if (cleaned.startsWith(issueTitle)) {
+    const rest = cleaned.slice(issueTitle.length).replace(/^[\s\-–—:|]+/, '').trim();
+    if (isValidVariantSubtitle(rest, issueTitle)) {
+      return rest;
+    }
+  }
+
+  const dashMatch = cleaned.match(
+    new RegExp(`^${escapeRegExp(issueTitle)}\\s*[-–—]\\s*(.+)$`, 'i'),
+  );
+  if (dashMatch && isValidVariantSubtitle(dashMatch[1], issueTitle)) {
+    return dashMatch[1].trim();
+  }
+
+  return '';
+}
+
 function extractSeriesName($) {
   let seriesName = '';
   $('a[href^="/comics/series/"]').each((_, el) => {
@@ -103,11 +161,14 @@ export function extractVariantNameFromList($, variantId, issueTitle) {
   return stripIssuePrefix(name, issueTitle);
 }
 
-export function extractVariantSubtitle($, variantId, issueTitle) {
+export function extractVariantSubtitle($, variantId, issueTitle, $variantList = null) {
   const subtitleSelectors = [
     '.header-title h2',
     '.comic-header h2',
+    '.header-title .subtitle',
+    '.comic-header .subtitle',
     'h1 + h2',
+    'h1 + p',
   ];
 
   for (const selector of subtitleSelectors) {
@@ -120,7 +181,7 @@ export function extractVariantSubtitle($, variantId, issueTitle) {
   const h1 = $('h1').first();
   const header = h1.closest('.header-title, .comic-header, header, .header');
   if (header.length) {
-    for (const el of header.find('h2').toArray()) {
+    for (const el of header.find('h2, .subtitle, p').toArray()) {
       const text = getText($, el);
       if (isValidVariantSubtitle(text, issueTitle)) {
         return text;
@@ -140,7 +201,11 @@ export function extractVariantSubtitle($, variantId, issueTitle) {
     sibling = sibling.next();
   }
 
-  const fromList = extractVariantNameFromList($, variantId, issueTitle);
+  const fromTitle = extractFromDocumentTitle($, issueTitle);
+  if (fromTitle) return fromTitle;
+
+  const listRoot = $variantList || $;
+  const fromList = extractVariantNameFromList(listRoot, variantId, issueTitle);
   if (fromList) return fromList;
 
   const active = $('.cover-variant-list .active, .variant-thumbs .active, .cover-variant.active').first();
@@ -154,7 +219,7 @@ export function extractVariantSubtitle($, variantId, issueTitle) {
     for (const part of ogTitle.split('|').map((value) => value.trim())) {
       if (!isValidVariantSubtitle(part, issueTitle)) continue;
       if (part.startsWith(issueTitle)) {
-        const trimmed = part.slice(issueTitle.length).trim();
+        const trimmed = part.slice(issueTitle.length).replace(/^[\s\-–—:|]+/, '').trim();
         if (trimmed) return trimmed;
       }
       if (part !== issueTitle) return part;
@@ -164,12 +229,12 @@ export function extractVariantSubtitle($, variantId, issueTitle) {
   return '';
 }
 
-export function resolveVariantCover($, { isVariant, variantId, issueTitle }) {
+export function resolveVariantCover($, { isVariant, variantId, issueTitle, $variantList = null }) {
   if (!isVariant) {
     return MAIN_COVER_LABEL;
   }
 
-  const subtitle = extractVariantSubtitle($, variantId, issueTitle);
+  const subtitle = extractVariantSubtitle($, variantId, issueTitle, $variantList);
   return subtitle || 'Variant Cover';
 }
 
@@ -258,18 +323,7 @@ export function resolveCoverImage($, ogCover, { isVariant, variantId, comicId })
   return locgCoverUrl(coverId);
 }
 
-async function fetchLocgHtml(impit, locgUrl, comicId, isVariant, variantId) {
-  const targets = isVariant && variantId
-    ? [
-        `${BASE_URL}/comic/${variantId}/x`,
-        locgUrl,
-        `${BASE_URL}/comic/${comicId}/x`,
-      ]
-    : [
-        locgUrl,
-        `${BASE_URL}/comic/${comicId}/x`,
-      ];
-
+async function fetchLocgHtml(impit, targets) {
   for (const target of targets) {
     const response = await impit.fetch(target);
     if (response.status === 404) {
@@ -290,18 +344,51 @@ async function fetchLocgHtml(impit, locgUrl, comicId, isVariant, variantId) {
   throw new Error('Could not reach League of Comic Geeks. Try again in a moment.');
 }
 
+async function tryFetchLocgHtml(impit, targets) {
+  try {
+    return await fetchLocgHtml(impit, targets);
+  } catch (error) {
+    if (error.message === 'Comic not found on League of Comic Geeks') {
+      throw error;
+    }
+    return null;
+  }
+}
+
 export async function fetchLocgComic(input) {
-  const { comicId, variantId, isVariant, url: locgUrl } = parseLocgUrl(input);
+  const { comicId, baseComicId, variantId, isVariant, url: locgUrl } = parseLocgUrl(input);
 
   const impit = new Impit({ browser: 'chrome' });
-  const html = await fetchLocgHtml(impit, locgUrl, comicId, isVariant, variantId);
+  const primaryTargets = isVariant && variantId
+    ? [
+        `${BASE_URL}/comic/${variantId}/x`,
+        locgUrl,
+        `${BASE_URL}/comic/${comicId}/x`,
+      ]
+    : [
+        locgUrl,
+        `${BASE_URL}/comic/${comicId}/x`,
+      ];
+
+  const html = await fetchLocgHtml(impit, primaryTargets);
   const $ = cheerio.load(html);
   const name = getText($, 'h1');
   if (!name) {
     throw new Error('Could not parse comic details from the LOCG page');
   }
 
-  const publisher = getText($, '.header-intro a').split('·')[0]?.trim() || '';
+  let $variantList = null;
+  if (isVariant && baseComicId && baseComicId !== comicId) {
+    const baseHtml = await tryFetchLocgHtml(impit, [
+      `${BASE_URL}/comic/${baseComicId}/x`,
+      locgUrl.split('?')[0],
+    ]);
+    if (baseHtml) {
+      $variantList = cheerio.load(baseHtml);
+    }
+  }
+
+  const publisher = extractPublisher($);
 
   let storeDate = '';
   $('.header-intro a').each((_, el) => {
@@ -319,6 +406,7 @@ export async function fetchLocgComic(input) {
     isVariant,
     variantId,
     issueTitle: name,
+    $variantList,
   });
 
   const notes = `Imported from ${locgUrl}`;
