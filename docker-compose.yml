@@ -1,17 +1,64 @@
+# ComicFrog — Docker Compose
+#
+# Quick start (pull pre-built image):
+#   docker compose up -d
+#   open http://localhost:3000
+#   Go to Settings in the app to connect your Froglog account.
+#
+# Build locally instead of pulling:
+#   docker compose up -d --build
+#
+# Optional: copy .env.example to .env to pre-seed Froglog credentials
+# or set the host port:
+#   cp .env.example .env
+
+name: comicfrog
+
 services:
   comicfrog:
+    # Pre-built image published by .github/workflows/docker-publish.yml on pushes to main.
+    # Falls back to building from the local Dockerfile when --build is used or the image is unavailable.
+    image: ghcr.io/leemotheyer/comicfrog:latest
     build: .
+    container_name: comicfrog
+
+    restart: unless-stopped
+
     ports:
+      # Host port : container port (ComicFrog listens on 3000 inside the container)
       - "${PORT:-3000}:3000"
+
     environment:
+      # Runtime port inside the container (keep at 3000 unless you change the Dockerfile EXPOSE)
       PORT: 3000
+
+      # Froglog API endpoint. Override only if you self-host Froglog.
       FROGLOG_API_URL: ${FROGLOG_API_URL:-https://api.froglog.co.uk/api}
+
+      # Optional seed credentials — you can also configure login in the web UI Settings page.
       FROGLOG_USERNAME: ${FROGLOG_USERNAME:-}
       FROGLOG_PASSWORD: ${FROGLOG_PASSWORD:-}
+
+      # Persisted settings and saved Froglog login (mapped to the volume below)
       DATA_DIR: /app/backend/data
+
     volumes:
+      # Stores Froglog credentials configured via the Settings page across restarts/upgrades
       - comicfrog-data:/app/backend/data
-    restart: unless-stopped
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
 volumes:
   comicfrog-data:
+    # Named volume for application data (Froglog session/settings)

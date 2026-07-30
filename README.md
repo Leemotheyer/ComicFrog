@@ -40,23 +40,48 @@ Comics are tagged with a `[comicfrog]` marker in the description so they can be 
 
 ## Quick start with Docker
 
+### Pull and run (recommended)
+
+After the GitHub Action has published an image (on merge to `main`), pull and start ComicFrog:
+
 ```bash
-docker compose up --build
+docker compose pull
+docker compose up -d
 ```
 
 Open [http://localhost:3000](http://localhost:3000), go to **Settings**, and enter your Froglog username and password.
 
-Credentials are saved to a Docker volume (`comicfrog-data`) so they persist across restarts.
+Credentials are saved to the `comicfrog-data` Docker volume and persist across restarts and image upgrades.
 
-### Optional environment variables
+### Build locally
 
-You can pre-seed credentials via `.env` instead of using the Settings page:
+```bash
+docker compose up -d --build
+```
+
+### Pre-seed credentials (optional)
 
 ```bash
 cp .env.example .env
-# Edit FROGLOG_USERNAME and FROGLOG_PASSWORD
-docker compose up --build
+# Edit FROGLOG_USERNAME and FROGLOG_PASSWORD if desired
+docker compose up -d
 ```
+
+### Container image
+
+Images are built and published to GitHub Container Registry on pushes to `main` and version tags (`v*`):
+
+```
+ghcr.io/leemotheyer/comicfrog:latest
+```
+
+To use a specific tag, set the image in `docker-compose.yml` or override when running:
+
+```bash
+COMICFROG_IMAGE=ghcr.io/leemotheyer/comicfrog:main docker compose up -d
+```
+
+> **Note:** GHCR packages are private by default for user accounts. After the first publish, set the package visibility to **Public** under GitHub → Packages → comicfrog → Package settings, or authenticate with `docker login ghcr.io` before pulling.
 
 ## Local development
 
