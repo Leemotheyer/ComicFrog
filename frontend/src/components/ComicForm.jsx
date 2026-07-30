@@ -1,6 +1,13 @@
 import { useState } from 'react';
 
-export default function ComicForm({ initialValues, submitting, onSubmit, onCancel }) {
+export default function ComicForm({
+  initialValues,
+  submitting,
+  submitLabel = 'Save',
+  showPurchaseFields = false,
+  onSubmit,
+  onCancel,
+}) {
   const [form, setForm] = useState(initialValues);
 
   function updateField(field, value) {
@@ -14,14 +21,8 @@ export default function ComicForm({ initialValues, submitting, onSubmit, onCance
 
   return (
     <form className="comic-form panel" onSubmit={handleSubmit}>
-      <h2>Add to Pull List</h2>
-      <p className="form-help">
-        Comics are stored as Froglog live service games with status <strong>active</strong>.
-        Cover images map to <code>cover_image</code> and variant art to <code>title_img</code>.
-      </p>
-
       <div className="form-grid">
-        <label>
+        <label className="full-width">
           Title *
           <input
             required
@@ -55,6 +56,7 @@ export default function ComicForm({ initialValues, submitting, onSubmit, onCance
             value={form.issueNumber}
             onChange={(e) => updateField('issueNumber', e.target.value)}
             placeholder="42"
+            inputMode="numeric"
           />
         </label>
 
@@ -79,6 +81,7 @@ export default function ComicForm({ initialValues, submitting, onSubmit, onCance
         <label className="full-width">
           Cover Image URL
           <input
+            type="url"
             value={form.coverImage}
             onChange={(e) => updateField('coverImage', e.target.value)}
             placeholder="https://..."
@@ -88,11 +91,36 @@ export default function ComicForm({ initialValues, submitting, onSubmit, onCance
         <label className="full-width">
           Variant Cover Image URL
           <input
+            type="url"
             value={form.variantCoverImage}
             onChange={(e) => updateField('variantCoverImage', e.target.value)}
             placeholder="https://..."
           />
         </label>
+
+        {showPurchaseFields && (
+          <>
+            <label>
+              Purchase Price ($)
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={form.purchasePrice}
+                onChange={(e) => updateField('purchasePrice', e.target.value)}
+              />
+            </label>
+            <label>
+              Purchase Date
+              <input
+                type="date"
+                value={form.purchaseDate}
+                onChange={(e) => updateField('purchaseDate', e.target.value)}
+              />
+            </label>
+          </>
+        )}
 
         <label className="full-width">
           Notes
@@ -105,10 +133,18 @@ export default function ComicForm({ initialValues, submitting, onSubmit, onCance
         </label>
       </div>
 
-      <div className="form-actions">
-        <button type="button" className="ghost-btn" onClick={onCancel}>Cancel</button>
+      {form.coverImage && (
+        <div className="cover-preview">
+          <img src={form.coverImage} alt="Cover preview" />
+        </div>
+      )}
+
+      <div className="form-actions sticky-actions">
+        {onCancel && (
+          <button type="button" className="ghost-btn" onClick={onCancel}>Cancel</button>
+        )}
         <button type="submit" className="primary-btn" disabled={submitting}>
-          {submitting ? 'Saving...' : 'Add to Pull List'}
+          {submitting ? 'Saving...' : submitLabel}
         </button>
       </div>
     </form>

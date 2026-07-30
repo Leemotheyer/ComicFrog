@@ -6,6 +6,12 @@ services:
     environment:
       PORT: 3000
       FROGLOG_API_URL: ${FROGLOG_API_URL:-https://api.froglog.co.uk/api}
-      FROGLOG_USERNAME: ${FROGLOG_USERNAME}
-      FROGLOG_PASSWORD: ${FROGLOG_PASSWORD}
+      FROGLOG_USERNAME: ${FROGLOG_USERNAME:-}
+      FROGLOG_PASSWORD: ${FROGLOG_PASSWORD:-}
+      DATA_DIR: /app/backend/data
+    volumes:
+      - comicfrog-data:/app/backend/data
     restart: unless-stopped
+
+volumes:
+  comicfrog-data:

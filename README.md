@@ -1,6 +1,17 @@
 # ComicFrog
 
-An unconventional comic pull list app that uses [Froglog](https://froglog.co.uk/) as its database. Comics are stored as Froglog games, with a web GUI for managing your pull list and Docker support for easy deployment.
+An unconventional comic pull list app that uses [Froglog](https://froglog.co.uk/) as its database. Comics are stored as Froglog games, with a mobile-friendly web GUI for managing your pull list and Docker support for easy deployment.
+
+## Features
+
+- Mobile-first UI with bottom navigation, list/grid views, and touch-friendly controls
+- In-app **Settings** page to connect your Froglog account (no `.env` required)
+- Search, filter, and sort your collection
+- Add comics with cover and variant cover support
+- Mark issues as purchased with price tracking
+- Edit existing entries
+- Pull-to-refresh on mobile
+- Remembers your last publisher/series and auto-suggests the next issue number
 
 ## How it works
 
@@ -29,21 +40,23 @@ Comics are tagged with a `[comicfrog]` marker in the description so they can be 
 
 ## Quick start with Docker
 
-1. Copy the environment file and add your Froglog credentials:
-
-```bash
-cp .env.example .env
-```
-
-2. Edit `.env` with your Froglog username and password.
-
-3. Start the app:
-
 ```bash
 docker compose up --build
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:3000](http://localhost:3000), go to **Settings**, and enter your Froglog username and password.
+
+Credentials are saved to a Docker volume (`comicfrog-data`) so they persist across restarts.
+
+### Optional environment variables
+
+You can pre-seed credentials via `.env` instead of using the Settings page:
+
+```bash
+cp .env.example .env
+# Edit FROGLOG_USERNAME and FROGLOG_PASSWORD
+docker compose up --build
+```
 
 ## Local development
 
@@ -51,7 +64,6 @@ docker compose up --build
 
 ```bash
 cd backend
-cp ../.env.example ../.env   # if you haven't already
 npm install
 npm run dev
 ```
@@ -68,11 +80,17 @@ npm run dev
 
 The Vite dev server runs on port 5173 and proxies API requests to the backend on port 3000.
 
+On first launch, open **Settings** in the app to connect Froglog.
+
 ## API endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/api/health` | Health check and Froglog connectivity |
+| `GET` | `/api/auth/status` | Check if Froglog is configured |
+| `POST` | `/api/auth/login` | Save Froglog credentials |
+| `POST` | `/api/auth/test` | Test Froglog connection |
+| `POST` | `/api/auth/logout` | Clear saved credentials |
 | `GET` | `/api/comics` | List all comics (pull list + purchased) |
 | `POST` | `/api/comics` | Add a comic to the pull list |
 | `POST` | `/api/comics/:id/purchase` | Mark a pull-list comic as purchased |
@@ -83,10 +101,11 @@ The Vite dev server runs on port 5173 and proxies API requests to the backend on
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `FROGLOG_USERNAME` | Yes | — | Your Froglog account username |
-| `FROGLOG_PASSWORD` | Yes | — | Your Froglog account password |
+| `FROGLOG_USERNAME` | No | — | Optional seed; can configure in Settings UI |
+| `FROGLOG_PASSWORD` | No | — | Optional seed; can configure in Settings UI |
 | `FROGLOG_API_URL` | No | `https://api.froglog.co.uk/api` | Froglog API base URL |
 | `PORT` | No | `3000` | Port the app listens on |
+| `DATA_DIR` | No | `backend/data` | Where settings are stored |
 
 ## Froglog API reference
 

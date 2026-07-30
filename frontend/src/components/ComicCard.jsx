@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
-export default function ComicCard({ comic, onPurchase, onDelete }) {
+export default function ComicCard({ comic, viewMode, onPurchase, onDelete, onEdit }) {
   const [showPurchase, setShowPurchase] = useState(false);
   const [price, setPrice] = useState('');
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().slice(0, 10));
@@ -14,7 +15,7 @@ export default function ComicCard({ comic, onPurchase, onDelete }) {
   }
 
   return (
-    <article className={`comic-card panel status-${comic.status}`}>
+    <article className={`comic-card panel status-${comic.status} ${viewMode}`}>
       <div className="comic-card__cover">
         {cover ? (
           <img src={cover} alt={`${comic.title} cover`} loading="lazy" />
@@ -27,7 +28,11 @@ export default function ComicCard({ comic, onPurchase, onDelete }) {
       </div>
 
       <div className="comic-card__body">
-        <h3>{comic.title}</h3>
+        <div className="comic-card__header">
+          <h3>{comic.title}</h3>
+          <Link to={`/edit/${comic.source}/${comic.id}`} className="text-btn">Edit</Link>
+        </div>
+
         <dl className="meta">
           {comic.publisher && (
             <>
@@ -45,6 +50,12 @@ export default function ComicCard({ comic, onPurchase, onDelete }) {
             <>
               <dt>Issue</dt>
               <dd>#{comic.issueNumber}</dd>
+            </>
+          )}
+          {comic.releaseDate && (
+            <>
+              <dt>Release</dt>
+              <dd>{comic.releaseDate}</dd>
             </>
           )}
           {comic.variantCover && (
@@ -94,6 +105,7 @@ export default function ComicCard({ comic, onPurchase, onDelete }) {
                 type="number"
                 min="0"
                 step="0.01"
+                inputMode="decimal"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="4.99"
@@ -107,9 +119,6 @@ export default function ComicCard({ comic, onPurchase, onDelete }) {
                 onChange={(e) => setPurchaseDate(e.target.value)}
               />
             </label>
-            <p className="form-help">
-              Stored in Froglog as a completed game. Price is saved in <code>hours_played</code>.
-            </p>
             <div className="form-actions">
               <button type="button" className="ghost-btn" onClick={() => setShowPurchase(false)}>
                 Cancel

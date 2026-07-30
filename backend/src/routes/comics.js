@@ -1,11 +1,11 @@
 import { Router } from 'express';
 
-export function createComicsRouter(froglog) {
+export function createComicsRouter(getFroglog) {
   const router = Router();
 
   router.get('/', async (_req, res) => {
     try {
-      const comics = await froglog.listComics();
+      const comics = await getFroglog().listComics();
       res.json(comics);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -20,7 +20,7 @@ export function createComicsRouter(froglog) {
         return res.status(400).json({ error: 'Title is required' });
       }
 
-      const comic = await froglog.addToPullList({
+      const comic = await getFroglog().addToPullList({
         title: title.trim(),
         publisher: publisher?.trim() || '',
         series: series?.trim() || '',
@@ -45,7 +45,7 @@ export function createComicsRouter(froglog) {
         return res.status(400).json({ error: 'A valid purchase price is required' });
       }
 
-      const comic = await froglog.markPurchased(
+      const comic = await getFroglog().markPurchased(
         req.params.id,
         purchasePrice,
         req.body.purchaseDate || null,
@@ -64,7 +64,7 @@ export function createComicsRouter(froglog) {
         return res.status(400).json({ error: 'Source must be pull-list or purchased' });
       }
 
-      const comic = await froglog.updateComic(req.params.id, source, updates);
+      const comic = await getFroglog().updateComic(req.params.id, source, updates);
       res.json(comic);
     } catch (error) {
       const status = error.message === 'Comic not found' ? 404 : 500;
@@ -79,7 +79,7 @@ export function createComicsRouter(froglog) {
         return res.status(400).json({ error: 'Query param source must be pull-list or purchased' });
       }
 
-      await froglog.deleteComic(req.params.id, source);
+      await getFroglog().deleteComic(req.params.id, source);
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: error.message });
