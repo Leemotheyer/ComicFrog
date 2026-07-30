@@ -11,7 +11,7 @@ An unconventional comic pull list app that uses [Froglog](https://froglog.co.uk/
 - Mark issues as purchased with price tracking
 - Edit existing entries
 - Pull-to-refresh on mobile
-- Remembers your last publisher/series and auto-suggests the next issue number
+- All comic data lives in Froglog (pull list, purchased, covers, notes, variant names)
 
 ## How it works
 

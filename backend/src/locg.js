@@ -69,6 +69,23 @@ function extractVariantName($) {
   return '';
 }
 
+function locgCoverUrl(comicId) {
+  return `https://s3.amazonaws.com/comicgeeks/comics/covers/large-${comicId}.jpg`;
+}
+
+function upgradeCoverUrl(url, comicId) {
+  if (url) {
+    const upgraded = url
+      .replace(/\/covers\/medium-(\d+)/, '/covers/large-$1')
+      .replace(/\/covers\/small-(\d+)/, '/covers/large-$1')
+      .replace(/\?.*$/, '');
+    if (upgraded.includes('/covers/large-')) {
+      return upgraded;
+    }
+  }
+  return locgCoverUrl(comicId);
+}
+
 export async function fetchLocgComic(input) {
   const { comicId, url: locgUrl } = parseLocgUrl(input);
 
@@ -104,16 +121,13 @@ export async function fetchLocgComic(input) {
     }
   });
 
-  const coverImage = $('meta[property="og:image"]').attr('content') || '';
-  const description = $('meta[property="og:description"]').attr('content') || '';
+  const ogCover = $('meta[property="og:image"]').attr('content') || '';
+  const coverImage = upgradeCoverUrl(ogCover, comicId);
   const { series: parsedSeries, issueNumber } = parseTitleParts(name);
   const series = extractSeriesName($) || parsedSeries;
   const variantCover = extractVariantName($);
 
-  const notes = [
-    description,
-    `Imported from ${locgUrl}`,
-  ].filter(Boolean).join('\n\n');
+  const notes = `Imported from ${locgUrl}`;
 
   return {
     title: name,
