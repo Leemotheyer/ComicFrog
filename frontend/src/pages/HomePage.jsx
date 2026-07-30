@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  createComic,
   deleteComic,
   fetchComics,
   purchaseComic,
@@ -123,7 +122,7 @@ export default function HomePage({ onStatsChange }) {
     }
   }
 
-  async function handleDelete() {
+  function handleTouchStart(event) {
     if (window.scrollY === 0) {
       setTouchStartY(event.touches[0].clientY);
     }

@@ -196,6 +196,7 @@ a {
 
 .chip,
 .primary-btn,
+.secondary-btn,
 .ghost-btn,
 .icon-btn,
 .text-btn {
@@ -207,6 +208,7 @@ a {
 
 .chip,
 .primary-btn,
+.secondary-btn,
 .ghost-btn {
   min-height: 44px;
   padding: 0.65rem 1rem;
@@ -230,6 +232,41 @@ a {
   background: transparent;
   color: var(--text);
   border-color: var(--border);
+}
+
+.secondary-btn {
+  background: var(--bg-elevated);
+  color: var(--text);
+  border-color: var(--border);
+  font-weight: 600;
+}
+
+.secondary-btn:disabled,
+.primary-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.locg-import {
+  display: grid;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.locg-import label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.locg-import input {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
 }
 
 .ghost-btn.danger,

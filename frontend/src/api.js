@@ -75,3 +75,10 @@ export function purchaseComic(id, purchasePrice, purchaseDate) {
 export function deleteComic(id, source) {
   return request(`/comics/${id}?source=${source}`, { method: 'DELETE' });
 }
+
+export function importLocgComic(url) {
+  return request('/locg/import', {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  });
+}
