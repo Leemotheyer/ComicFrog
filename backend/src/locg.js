@@ -180,8 +180,9 @@ function locgCoverUrl(comicId) {
 function upgradeCoverUrl(url, comicId) {
   if (url) {
     const upgraded = url
-      .replace(/\/covers\/medium-(\d+)/, '/covers/large-$1')
-      .replace(/\/covers\/small-(\d+)/, '/covers/large-$1')
+      .replace(/\/covers\/medium-(\d+)/, `/covers/large-${comicId}`)
+      .replace(/\/covers\/small-(\d+)/, `/covers/large-${comicId}`)
+      .replace(/\/covers\/large-(\d+)/, `/covers/large-${comicId}`)
       .replace(/\?.*$/, '');
     if (upgraded.includes('/covers/large-')) {
       return upgraded;
@@ -190,11 +191,84 @@ function upgradeCoverUrl(url, comicId) {
   return locgCoverUrl(comicId);
 }
 
-async function fetchLocgHtml(impit, locgUrl, comicId) {
-  const targets = [
-    locgUrl,
-    `${BASE_URL}/comic/${comicId}/x`,
+function extractImageSrc($, img) {
+  if (!img.length) return '';
+  return img.attr('data-src') || img.attr('src') || '';
+}
+
+function extractCoverFromVariantList($, variantId) {
+  const item = $(`li[data-comic="${variantId}"]`).first();
+  if (!item.length) return '';
+
+  const src = extractImageSrc($, item.find('img').first());
+  return src ? upgradeCoverUrl(src, variantId) : '';
+}
+
+function extractCoverFromActiveVariant($, variantId) {
+  const active = $(
+    '.cover-variant-list .active img, .variant-thumbs .active img, .cover-variant.active img',
+  ).first();
+  const src = extractImageSrc($, active);
+  return src ? upgradeCoverUrl(src, variantId) : '';
+}
+
+function extractCoverFromPage($, comicId) {
+  const selectors = [
+    '.comic-cover-art img',
+    '.cover-art img',
+    '.cover-image img',
+    '.primary-cover img',
   ];
+
+  for (const selector of selectors) {
+    const src = extractImageSrc($, $(selector).first());
+    if (src && !src.includes('no-cover')) {
+      return upgradeCoverUrl(src, comicId);
+    }
+  }
+
+  return '';
+}
+
+export function resolveCoverImage($, ogCover, { isVariant, variantId, comicId }) {
+  const coverId = isVariant && variantId ? variantId : comicId;
+
+  if (isVariant && variantId) {
+    const variantSources = [
+      () => extractCoverFromPage($, variantId),
+      () => extractCoverFromActiveVariant($, variantId),
+      () => extractCoverFromVariantList($, variantId),
+      () => (ogCover && ogCover.includes(String(variantId))
+        ? upgradeCoverUrl(ogCover, variantId)
+        : ''),
+      () => locgCoverUrl(variantId),
+    ];
+
+    for (const getCover of variantSources) {
+      const cover = getCover();
+      if (cover) return cover;
+    }
+  }
+
+  const pageCover = extractCoverFromPage($, coverId);
+  if (pageCover) return pageCover;
+
+  if (ogCover) return upgradeCoverUrl(ogCover, coverId);
+
+  return locgCoverUrl(coverId);
+}
+
+async function fetchLocgHtml(impit, locgUrl, comicId, isVariant, variantId) {
+  const targets = isVariant && variantId
+    ? [
+        `${BASE_URL}/comic/${variantId}/x`,
+        locgUrl,
+        `${BASE_URL}/comic/${comicId}/x`,
+      ]
+    : [
+        locgUrl,
+        `${BASE_URL}/comic/${comicId}/x`,
+      ];
 
   for (const target of targets) {
     const response = await impit.fetch(target);
@@ -220,7 +294,7 @@ export async function fetchLocgComic(input) {
   const { comicId, variantId, isVariant, url: locgUrl } = parseLocgUrl(input);
 
   const impit = new Impit({ browser: 'chrome' });
-  const html = await fetchLocgHtml(impit, locgUrl, comicId);
+  const html = await fetchLocgHtml(impit, locgUrl, comicId, isVariant, variantId);
   const $ = cheerio.load(html);
   const name = getText($, 'h1');
   if (!name) {
@@ -238,7 +312,7 @@ export async function fetchLocgComic(input) {
   });
 
   const ogCover = $('meta[property="og:image"]').attr('content') || '';
-  const coverImage = upgradeCoverUrl(ogCover, comicId);
+  const coverImage = resolveCoverImage($, ogCover, { isVariant, variantId, comicId });
   const { series: parsedSeries, issueNumber } = parseTitleParts(name);
   const series = extractSeriesName($) || parsedSeries;
   const variantCover = resolveVariantCover($, {
