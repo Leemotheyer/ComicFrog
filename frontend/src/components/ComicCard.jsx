@@ -28,57 +28,59 @@ export default function ComicCard({ comic, viewMode, onPurchase, onDelete }) {
       </div>
 
       <div className="comic-card__body">
-        <div className="comic-card__header">
-          <h3>{comic.title}</h3>
-          <Link to={`/edit/${comic.source}/${comic.id}`} className="text-btn">Edit</Link>
+        <div className="comic-card__content">
+          <div className="comic-card__header">
+            <h3>{comic.title}</h3>
+            <Link to={`/edit/${comic.source}/${comic.id}`} className="text-btn">Edit</Link>
+          </div>
+
+          <dl className="meta">
+            {comic.publisher && (
+              <>
+                <dt>Publisher</dt>
+                <dd>{comic.publisher}</dd>
+              </>
+            )}
+            {comic.series && (
+              <>
+                <dt>Series</dt>
+                <dd>{comic.series}</dd>
+              </>
+            )}
+            {comic.issueNumber && (
+              <>
+                <dt>Issue</dt>
+                <dd>#{comic.issueNumber}</dd>
+              </>
+            )}
+            {comic.releaseDate && (
+              <>
+                <dt>Release</dt>
+                <dd>{formatDate(comic.releaseDate)}</dd>
+              </>
+            )}
+            {comic.variantCover && (
+              <>
+                <dt>Cover</dt>
+                <dd>{comic.variantCover}</dd>
+              </>
+            )}
+            {comic.status === 'complete' && comic.purchasePrice != null && (
+              <>
+                <dt>Price</dt>
+                <dd>${Number(comic.purchasePrice).toFixed(2)}</dd>
+              </>
+            )}
+            {comic.status === 'complete' && comic.purchaseDate && (
+              <>
+                <dt>Purchased</dt>
+                <dd>{formatDate(comic.purchaseDate)}</dd>
+              </>
+            )}
+          </dl>
+
+          {comic.notes && <p className="notes">{comic.notes}</p>}
         </div>
-
-        <dl className="meta">
-          {comic.publisher && (
-            <>
-              <dt>Publisher</dt>
-              <dd>{comic.publisher}</dd>
-            </>
-          )}
-          {comic.series && (
-            <>
-              <dt>Series</dt>
-              <dd>{comic.series}</dd>
-            </>
-          )}
-          {comic.issueNumber && (
-            <>
-              <dt>Issue</dt>
-              <dd>#{comic.issueNumber}</dd>
-            </>
-          )}
-          {comic.releaseDate && (
-            <>
-              <dt>Release</dt>
-              <dd>{formatDate(comic.releaseDate)}</dd>
-            </>
-          )}
-          {comic.variantCover && (
-            <>
-              <dt>Cover</dt>
-              <dd>{comic.variantCover}</dd>
-            </>
-          )}
-          {comic.status === 'complete' && comic.purchasePrice != null && (
-            <>
-              <dt>Price</dt>
-              <dd>${Number(comic.purchasePrice).toFixed(2)}</dd>
-            </>
-          )}
-          {comic.status === 'complete' && comic.purchaseDate && (
-            <>
-              <dt>Purchased</dt>
-              <dd>{formatDate(comic.purchaseDate)}</dd>
-            </>
-          )}
-        </dl>
-
-        {comic.notes && <p className="notes">{comic.notes}</p>}
 
         <div className="card-actions">
           {comic.status === 'active' && !showPurchase && (
