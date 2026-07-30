@@ -40,13 +40,23 @@ Comics are tagged with a `[comicfrog]` marker in the description so they can be 
 
 ## Quick start with Docker
 
-### Pull and run (recommended)
-
-After the GitHub Action has published an image (on merge to `main`), pull and start ComicFrog:
+### Build and run locally (default)
 
 ```bash
-docker compose pull
-docker compose up -d
+docker compose up -d --build
+```
+
+### Pull pre-built image from GHCR
+
+Images are published by the GitHub Action on every push to `main` and version tags (`v*`):
+
+```
+ghcr.io/leemotheyer/comicfrog:latest
+```
+
+```bash
+COMICFROG_IMAGE=ghcr.io/leemotheyer/comicfrog:latest docker compose pull
+COMICFROG_IMAGE=ghcr.io/leemotheyer/comicfrog:latest docker compose up -d
 ```
 
 Open [http://localhost:3000](http://localhost:3000), go to **Settings**, and enter your Froglog username and password.
@@ -69,19 +79,21 @@ docker compose up -d
 
 ### Container image
 
-Images are built and published to GitHub Container Registry on pushes to `main` and version tags (`v*`):
+The **Build and Publish Docker Image** workflow (`.github/workflows/docker-publish.yml`) runs on:
+- every push to any branch (builds and pushes tagged images)
+- pull requests (build only, no push)
+- version tags `v*`
+- manual `workflow_dispatch`
+
+Published to:
 
 ```
-ghcr.io/leemotheyer/comicfrog:latest
+ghcr.io/leemotheyer/comicfrog:latest   # main branch
+ghcr.io/leemotheyer/comicfrog:<branch> # other branches
+ghcr.io/leemotheyer/comicfrog:<sha>    # commit SHA
 ```
 
-To use a specific tag, set the image in `docker-compose.yml` or override when running:
-
-```bash
-COMICFROG_IMAGE=ghcr.io/leemotheyer/comicfrog:main docker compose up -d
-```
-
-> **Note:** GHCR packages are private by default for user accounts. After the first publish, set the package visibility to **Public** under GitHub → Packages → comicfrog → Package settings, or authenticate with `docker login ghcr.io` before pulling.
+> **Note:** GHCR packages are private by default for user accounts. Set the package to **Public** under GitHub → Packages → comicfrog → Package settings, or run `docker login ghcr.io` before pulling.
 
 ## Local development
 

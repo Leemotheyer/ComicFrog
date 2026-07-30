@@ -1,25 +1,24 @@
 # ComicFrog — Docker Compose
 #
-# Quick start (pull pre-built image):
-#   docker compose up -d
-#   open http://localhost:3000
-#   Go to Settings in the app to connect your Froglog account.
-#
-# Build locally instead of pulling:
+# Local build (default — no registry login required):
 #   docker compose up -d --build
+#   open http://localhost:3000
 #
-# Optional: copy .env.example to .env to pre-seed Froglog credentials
-# or set the host port:
-#   cp .env.example .env
+# Pull pre-built image from GitHub Container Registry:
+#   COMICFROG_IMAGE=ghcr.io/leemotheyer/comicfrog:latest docker compose pull
+#   COMICFROG_IMAGE=ghcr.io/leemotheyer/comicfrog:latest docker compose up -d
+#
+# Optional: copy .env.example to .env to pre-seed Froglog credentials or change the host port.
 
 name: comicfrog
 
 services:
   comicfrog:
-    # Pre-built image published by .github/workflows/docker-publish.yml on pushes to main.
-    # Falls back to building from the local Dockerfile when --build is used or the image is unavailable.
-    image: ghcr.io/leemotheyer/comicfrog:latest
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Tags the local build; override COMICFROG_IMAGE to pull from GHCR instead.
+    image: ${COMICFROG_IMAGE:-comicfrog:local}
     container_name: comicfrog
 
     restart: unless-stopped
@@ -29,17 +28,10 @@ services:
       - "${PORT:-3000}:3000"
 
     environment:
-      # Runtime port inside the container (keep at 3000 unless you change the Dockerfile EXPOSE)
       PORT: 3000
-
-      # Froglog API endpoint. Override only if you self-host Froglog.
       FROGLOG_API_URL: ${FROGLOG_API_URL:-https://api.froglog.co.uk/api}
-
-      # Optional seed credentials — you can also configure login in the web UI Settings page.
       FROGLOG_USERNAME: ${FROGLOG_USERNAME:-}
       FROGLOG_PASSWORD: ${FROGLOG_PASSWORD:-}
-
-      # Persisted settings and saved Froglog login (mapped to the volume below)
       DATA_DIR: /app/backend/data
 
     volumes:
@@ -61,4 +53,3 @@ services:
 
 volumes:
   comicfrog-data:
-    # Named volume for application data (Froglog session/settings)
