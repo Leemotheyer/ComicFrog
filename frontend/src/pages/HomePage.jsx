@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import {
   deleteComic,
   fetchComics,
@@ -7,6 +7,7 @@ import {
 } from '../api';
 import ComicCard from '../components/ComicCard';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { useComicsRefresh } from '../context/ComicsRefreshContext';
 import { useToast } from '../context/ToastContext';
 
 const SORT_OPTIONS = [
@@ -40,6 +41,8 @@ function sortComics(comics, sortBy) {
 
 export default function HomePage({ onStatsChange }) {
   const { push } = useToast();
+  const { refreshKey } = useComicsRefresh();
+  const location = useLocation();
   const [comics, setComics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -49,11 +52,16 @@ export default function HomePage({ onStatsChange }) {
   const [sortBy, setSortBy] = useState('newest');
   const [viewMode, setViewMode] = useState('grid');
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const [touchStartY, setTouchStartY] = useState(null);
 
-  async function loadComics({ silent = false } = {}) {
-    if (!silent) setLoading(true);
-    else setRefreshing(true);
+  const loadComics = useCallback(async ({ silent = false } = {}) => {
+    if (silent) {
+      setRefreshing(true);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     setError('');
     try {
       const data = await fetchComics();
@@ -64,11 +72,12 @@ export default function HomePage({ onStatsChange }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
-    loadComics();
-  }, []);
+    const silent = refreshKey > 0 || Boolean(location.state?.refreshAt);
+    loadComics({ silent });
+  }, [loadComics, refreshKey, location.key, location.state?.refreshAt]);
 
   const stats = useMemo(() => ({
     active: comics.filter((c) => c.status === 'active').length,
@@ -101,24 +110,36 @@ export default function HomePage({ onStatsChange }) {
   }, [comics, filter, search, sortBy]);
 
   async function handlePurchase(id, price, date) {
+    const previous = comics;
+    setComics((current) => current.filter((comic) => comic.id !== id || comic.source !== 'pull-list'));
     try {
       await purchaseComic(id, price, date);
       push('Marked as purchased', 'success');
       await loadComics({ silent: true });
     } catch (err) {
+      setComics(previous);
       push(err.message, 'error');
     }
   }
 
   async function handleDelete() {
-    if (!pendingDelete) return;
+    if (!pendingDelete || deleting) return;
+
+    const { id, source } = pendingDelete;
+    const previous = comics;
+    setDeleting(true);
+    setPendingDelete(null);
+    setComics((current) => current.filter((comic) => !(comic.id === id && comic.source === source)));
+
     try {
-      await deleteComic(pendingDelete.id, pendingDelete.source);
+      await deleteComic(id, source);
       push('Comic removed', 'success');
-      setPendingDelete(null);
       await loadComics({ silent: true });
     } catch (err) {
+      setComics(previous);
       push(err.message, 'error');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -236,7 +257,7 @@ export default function HomePage({ onStatsChange }) {
           )}
         </div>
       ) : (
-        <section className={`comic-collection ${viewMode}`}>
+        <section className={`comic-collection ${viewMode}${refreshing ? ' is-refreshing' : ''}`}>
           {filtered.map((comic) => (
             <ComicCard
               key={`${comic.source}-${comic.id}`}
@@ -254,6 +275,7 @@ export default function HomePage({ onStatsChange }) {
         title="Remove comic?"
         message="This will delete the entry from Froglog."
         confirmLabel="Remove"
+        busy={deleting}
         onConfirm={handleDelete}
         onCancel={() => setPendingDelete(null)}
       />

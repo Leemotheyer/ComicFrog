@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import AppShell from './components/AppShell';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ComicsRefreshProvider } from './context/ComicsRefreshContext';
 import { ToastProvider } from './context/ToastContext';
 import AddPage from './pages/AddPage';
 import EditPage from './pages/EditPage';
@@ -60,9 +61,11 @@ export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <ComicsRefreshProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </ComicsRefreshProvider>
       </ToastProvider>
     </AuthProvider>
   );
