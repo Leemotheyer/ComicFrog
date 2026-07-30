@@ -144,10 +144,14 @@ export default function HomePage({ onStatsChange }) {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
+      <div className="page-header">
+        <h1>Comics</h1>
+      </div>
+
       <section className="stats-row">
         <div className="stat-card">
           <span className="stat-card__value">{stats.active}</span>
-          <span className="stat-card__label">Pull List</span>
+          <span className="stat-card__label">Active</span>
         </div>
         <div className="stat-card">
           <span className="stat-card__value">{stats.complete}</span>
@@ -173,7 +177,7 @@ export default function HomePage({ onStatsChange }) {
         <div className="toolbar-row">
           <div className="filters scroll-x">
             {[
-              ['active', 'Pull List'],
+              ['active', 'Active'],
               ['all', 'All'],
               ['complete', 'Purchased'],
             ].map(([value, label]) => (

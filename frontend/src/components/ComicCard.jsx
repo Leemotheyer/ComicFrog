@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { formatDate } from '../utils/format';
 
-export default function ComicCard({ comic, viewMode, onPurchase, onDelete, onEdit }) {
+export default function ComicCard({ comic, viewMode, onPurchase, onDelete }) {
   const [showPurchase, setShowPurchase] = useState(false);
   const [price, setPrice] = useState('');
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().slice(0, 10));
-  const cover = comic.coverImage || comic.variantCoverImage;
 
   async function handlePurchase(event) {
     event.preventDefault();
@@ -17,13 +17,13 @@ export default function ComicCard({ comic, viewMode, onPurchase, onDelete, onEdi
   return (
     <article className={`comic-card panel status-${comic.status} ${viewMode}`}>
       <div className="comic-card__cover">
-        {cover ? (
-          <img src={cover} alt={`${comic.title} cover`} loading="lazy" />
+        {comic.coverImage ? (
+          <img src={comic.coverImage} alt={`${comic.title} cover`} loading="lazy" />
         ) : (
           <div className="cover-placeholder">No Cover</div>
         )}
         <span className={`badge ${comic.status}`}>
-          {comic.status === 'active' ? 'Pull List' : 'Purchased'}
+          {comic.status === 'active' ? 'Active' : 'Purchased'}
         </span>
       </div>
 
@@ -55,12 +55,12 @@ export default function ComicCard({ comic, viewMode, onPurchase, onDelete, onEdi
           {comic.releaseDate && (
             <>
               <dt>Release</dt>
-              <dd>{comic.releaseDate}</dd>
+              <dd>{formatDate(comic.releaseDate)}</dd>
             </>
           )}
           {comic.variantCover && (
             <>
-              <dt>Variant</dt>
+              <dt>Cover</dt>
               <dd>{comic.variantCover}</dd>
             </>
           )}
@@ -70,14 +70,13 @@ export default function ComicCard({ comic, viewMode, onPurchase, onDelete, onEdi
               <dd>${Number(comic.purchasePrice).toFixed(2)}</dd>
             </>
           )}
+          {comic.status === 'complete' && comic.purchaseDate && (
+            <>
+              <dt>Purchased</dt>
+              <dd>{formatDate(comic.purchaseDate)}</dd>
+            </>
+          )}
         </dl>
-
-        {comic.variantCoverImage && comic.coverImage && (
-          <div className="variant-preview">
-            <img src={comic.variantCoverImage} alt="Variant cover" loading="lazy" />
-            <span>Variant cover</span>
-          </div>
-        )}
 
         {comic.notes && <p className="notes">{comic.notes}</p>}
 

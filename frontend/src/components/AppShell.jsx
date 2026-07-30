@@ -19,7 +19,7 @@ export default function AppShell({ pullListCount = 0 }) {
           <span className="topbar__logo">🐸</span>
           <div>
             <p className="topbar__title">ComicFrog</p>
-            <p className="topbar__subtitle">Froglog pull list</p>
+            <p className="topbar__subtitle">Comic collection</p>
           </div>
         </div>
         {configured && (

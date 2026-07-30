@@ -61,7 +61,7 @@ export default function SettingsPage() {
       <div className="page-header">
         <h1>Settings</h1>
         <p className="page-lead">
-          Connect your Froglog account. Credentials are stored on this server so you can use ComicFrog from any device.
+          Connect your Froglog account. Set <code>FROGLOG_USERNAME</code>, <code>FROGLOG_PASSWORD</code>, and optionally <code>FROGLOG_API_URL</code> as environment variables, or save credentials here.
         </p>
       </div>
 

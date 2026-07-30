@@ -3,15 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { createComic, importLocgComic } from '../api';
 import ComicForm from '../components/ComicForm';
 import { useToast } from '../context/ToastContext';
-import { getLastAddDefaults, saveLastAddDefaults } from '../utils/storage';
-
-function suggestIssueNumber(issueNumber) {
-  if (!issueNumber) return '';
-  const match = issueNumber.match(/^(\D*)(\d+)(\D*)$/);
-  if (!match) return issueNumber;
-  const next = String(Number(match[2]) + 1).padStart(match[2].length, '0');
-  return `${match[1]}${next}${match[3]}`;
-}
 
 const EMPTY_FORM = {
   title: '',
@@ -32,15 +23,7 @@ export default function AddPage() {
   const [importing, setImporting] = useState(false);
   const [locgUrl, setLocgUrl] = useState('');
   const [formKey, setFormKey] = useState(0);
-  const [formDefaults, setFormDefaults] = useState(() => {
-    const last = getLastAddDefaults();
-    return {
-      ...EMPTY_FORM,
-      publisher: last.publisher || '',
-      series: last.series || '',
-      issueNumber: suggestIssueNumber(last.issueNumber || ''),
-    };
-  });
+  const [formDefaults, setFormDefaults] = useState(EMPTY_FORM);
 
   const pageLead = useMemo(
     () => 'Paste a League of Comic Geeks link to pre-fill details, or enter them manually.',
@@ -80,7 +63,6 @@ export default function AddPage() {
     setSubmitting(true);
     try {
       await createComic(form);
-      saveLastAddDefaults(form);
       push('Added to pull list', 'success');
       navigate('/');
     } catch (err) {
