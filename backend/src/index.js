@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { requireFroglogAuth } from './middleware/requireAuth.js';
 import { createAuthRouter } from './routes/auth.js';
 import { createComicsRouter } from './routes/comics.js';
+import { createLocgRouter } from './routes/locg.js';
 import { SettingsManager } from './settings.js';
 
 dotenv.config();
@@ -35,6 +36,7 @@ app.get('/api/health', async (_req, res) => {
 });
 
 app.use('/api/auth', createAuthRouter(settings));
+app.use('/api/locg', createLocgRouter());
 app.use('/api/comics', requireFroglogAuth(settings), createComicsRouter(() => settings.getClient()));
 
 const frontendDist = path.join(__dirname, '../../frontend/dist');

@@ -131,7 +131,7 @@ export class FroglogClient {
       img: comic.variantCoverImage || comic.coverImage || undefined,
       title_img: comic.variantCoverImage || undefined,
       live_service_status: 'active',
-      is_public: false,
+      is_public: true,
     };
   }
 
@@ -149,7 +149,7 @@ export class FroglogClient {
       hours_played: comic.purchasePrice ?? undefined,
       start_date: comic.purchaseDate || undefined,
       end_date: comic.purchaseDate || undefined,
-      is_public: false,
+      is_public: true,
     };
   }
 
