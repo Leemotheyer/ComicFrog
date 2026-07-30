@@ -1,4 +1,101 @@
 const COMIC_MARKER = '[comicfrog]';
+const MAIN_COVER_LABEL = 'Main Cover';
+
+function formatFroglogDate(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function formatMoney(value) {
+  if (value == null || Number.isNaN(Number(value))) return '';
+  return `$${Number(value).toFixed(2)}`;
+}
+
+export function baseTitle(title) {
+  const trimmed = title?.trim() || '';
+  const separator = ' · ';
+  const index = trimmed.indexOf(separator);
+  return index > -1 ? trimmed.slice(0, index) : trimmed;
+}
+
+export function buildFroglogTitle(comic) {
+  const title = baseTitle(comic.title);
+  const cover = comic.variantCover?.trim();
+  if (!cover || cover === MAIN_COVER_LABEL) return title;
+  return `${title} · ${cover}`;
+}
+
+export function buildFroglogDescription(comic, source) {
+  const lines = [COMIC_MARKER];
+
+  if (source === 'pull-list') {
+    lines.push('Status: On pull list — purchase this issue');
+  } else {
+    const price = formatMoney(comic.purchasePrice);
+    const purchasedOn = formatFroglogDate(comic.purchaseDate);
+    const paid = [price, purchasedOn && `on ${purchasedOn}`].filter(Boolean).join(' ');
+    lines.push(`Status: Purchased${paid ? ` — ${paid}` : ''}`);
+  }
+
+  if (comic.variantCover) lines.push(`Cover: ${comic.variantCover}`);
+  if (comic.publisher) lines.push(`Publisher: ${comic.publisher}`);
+  if (comic.series) lines.push(`Series: ${comic.series}`);
+  if (comic.issueNumber) lines.push(`Issue: #${comic.issueNumber}`);
+  if (comic.releaseDate) lines.push(`Release: ${formatFroglogDate(comic.releaseDate)}`);
+
+  if (comic.notes?.trim()) {
+    lines.push('');
+    lines.push(comic.notes.trim());
+  }
+
+  return lines.join('\n');
+}
+
+const META_PREFIXES = ['Status:', 'Cover:', 'Variant:', 'Publisher:', 'Series:', 'Issue:', 'Release:'];
+
+export function parseDescription(description) {
+  const body = description?.startsWith(COMIC_MARKER)
+    ? description.slice(COMIC_MARKER.length).replace(/^\n/, '')
+    : (description || '');
+
+  const lines = body.split('\n');
+  let variantCover = '';
+  const noteLines = [];
+  let inNotes = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (variantCover || noteLines.length) inNotes = true;
+      continue;
+    }
+
+    if (trimmed.startsWith('Cover: ')) {
+      variantCover = trimmed.slice('Cover: '.length);
+      continue;
+    }
+    if (trimmed.startsWith('Variant: ')) {
+      variantCover = trimmed.slice('Variant: '.length);
+      continue;
+    }
+    if (!inNotes && META_PREFIXES.some((prefix) => trimmed.startsWith(prefix))) {
+      continue;
+    }
+
+    noteLines.push(line);
+  }
+
+  return {
+    variantCover,
+    notes: noteLines.join('\n').trim(),
+  };
+}
 
 export class FroglogClient {
   constructor(baseUrl, username, password) {
@@ -30,7 +127,6 @@ export class FroglogClient {
 
     const data = await response.json();
     this.token = data.token;
-    // JWT is valid for 30 days; refresh daily to stay safe.
     this.tokenExpiresAt = Date.now() + 24 * 60 * 60 * 1000;
     return this.token;
   }
@@ -64,40 +160,8 @@ export class FroglogClient {
     return Boolean(record?.description?.startsWith(COMIC_MARKER));
   }
 
-  stripMarker(description) {
-    if (!description?.startsWith(COMIC_MARKER)) {
-      return description || '';
-    }
-    return description.slice(COMIC_MARKER.length).replace(/^\n/, '');
-  }
-
-  buildDescription(notes, variantCover) {
-    const lines = [COMIC_MARKER];
-    if (variantCover) {
-      lines.push(`Variant: ${variantCover}`);
-    }
-    if (notes) {
-      lines.push(notes);
-    }
-    return lines.join('\n');
-  }
-
-  parseDescription(description) {
-    const body = this.stripMarker(description);
-    const lines = body.split('\n').filter(Boolean);
-    let variantCover = '';
-    let notes = body;
-
-    if (lines[0]?.startsWith('Variant: ')) {
-      variantCover = lines[0].slice('Variant: '.length);
-      notes = lines.slice(1).join('\n');
-    }
-
-    return { variantCover, notes };
-  }
-
   toComic(record, source) {
-    const { variantCover, notes } = this.parseDescription(record.description);
+    const { variantCover, notes } = parseDescription(record.description);
 
     return {
       id: record.id,
@@ -121,8 +185,8 @@ export class FroglogClient {
 
   toPullListPayload(comic) {
     return {
-      title: comic.title,
-      description: this.buildDescription(comic.notes, comic.variantCover),
+      title: buildFroglogTitle(comic),
+      description: buildFroglogDescription(comic, 'pull-list'),
       dev: comic.publisher || undefined,
       genre: comic.series || undefined,
       platform: comic.issueNumber || undefined,
@@ -138,8 +202,8 @@ export class FroglogClient {
 
   toPurchasedPayload(comic) {
     return {
-      title: comic.title,
-      description: this.buildDescription(comic.notes, comic.variantCover),
+      title: buildFroglogTitle(comic),
+      description: buildFroglogDescription(comic, 'purchased'),
       dev: comic.publisher || undefined,
       genre: comic.series || undefined,
       platform: comic.issueNumber || undefined,
@@ -225,6 +289,20 @@ export class FroglogClient {
     });
 
     return this.toComic(updated, source);
+  }
+
+  async syncFroglogLabels() {
+    const comics = await this.listComics();
+    let updated = 0;
+
+    for (const comic of comics) {
+      await this.updateComic(comic.id, comic.source, {
+        title: baseTitle(comic.title),
+      });
+      updated += 1;
+    }
+
+    return { updated, total: comics.length };
   }
 
   async deleteComic(id, source) {

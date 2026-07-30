@@ -31,7 +31,27 @@ ComicFrog maps comic book data onto Froglog's game model:
 | Purchased | Completed game | `POST /api/games` with `end_date` set |
 | Purchase price | `hours_played` | Price stored as decimal hours (e.g. $4.99 → `4.99`) |
 
-Comics are tagged with a `[comicfrog]` marker in the description so they can be distinguished from actual games in your Froglog account.
+Comics are tagged with a `[comicfrog]` marker in the description so ComicFrog can find them. Descriptions also include human-readable pull list details for anyone viewing your Froglog profile directly.
+
+### Viewing on Froglog
+
+Someone browsing your Froglog account (no ComicFrog needed) can use it as a shopping list:
+
+| Froglog section | Meaning |
+|-----------------|---------|
+| **Live Service** | Comics to purchase (your pull list) |
+| **Completed Games** | Comics already bought |
+| **Developer** | Publisher |
+| **Genre** | Series |
+| **Platform** | Issue # |
+| **Description** | Status, cover variant, release date, notes |
+| **Start date** | Store release date |
+| **End date** | Purchase date (completed games) |
+| **Hours played** | Price paid |
+
+Pull list titles include the cover variant when applicable, e.g. `Power Rangers Unlimited #1 · Cover C (Zonno Virgin Variant)`.
+
+Use **Settings → Refresh Froglog labels** in ComicFrog to rewrite existing entries with the latest format.
 
 ### Status flow
 
@@ -132,6 +152,7 @@ On first launch, open **Settings** in the app to connect Froglog.
 | `POST` | `/api/comics` | Add a comic to the pull list |
 | `POST` | `/api/comics/:id/purchase` | Mark a pull-list comic as purchased |
 | `PUT` | `/api/comics/:id` | Update a comic |
+| `POST` | `/api/comics/sync-froglog-labels` | Rewrite Froglog titles/descriptions for all comics |
 | `DELETE` | `/api/comics/:id?source=pull-list\|purchased` | Remove a comic |
 
 ## Environment variables

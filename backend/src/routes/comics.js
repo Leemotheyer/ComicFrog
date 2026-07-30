@@ -38,6 +38,15 @@ export function createComicsRouter(getFroglog) {
     }
   });
 
+  router.post('/sync-froglog-labels', async (_req, res) => {
+    try {
+      const result = await getFroglog().syncFroglogLabels();
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   router.post('/:id/purchase', async (req, res) => {
     try {
       const purchasePrice = Number(req.body.purchasePrice);

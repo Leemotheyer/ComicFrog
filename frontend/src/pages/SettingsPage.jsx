@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { loginFroglog, logoutFroglog, testFroglogConnection } from '../api';
+import { loginFroglog, logoutFroglog, syncFroglogLabels, testFroglogConnection } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
@@ -9,6 +9,7 @@ export default function SettingsPage() {
   const [password, setPassword] = useState('');
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   if (!loading && configured) {
     // Still show settings when configured - don't redirect
@@ -38,6 +39,18 @@ export default function SettingsPage() {
       push(err.message, 'error');
     } finally {
       setTesting(false);
+    }
+  }
+
+  async function handleSyncLabels() {
+    setSyncing(true);
+    try {
+      const result = await syncFroglogLabels();
+      push(`Updated ${result.updated} Froglog ${result.updated === 1 ? 'entry' : 'entries'}`, 'success');
+    } catch (err) {
+      push(err.message, 'error');
+    } finally {
+      setSyncing(false);
     }
   }
 
@@ -128,6 +141,41 @@ export default function SettingsPage() {
           </button>
         </div>
       </form>
+
+      {configured && (
+        <section className="panel froglog-guide">
+          <h2>Reading your Froglog profile</h2>
+          <p className="form-help">
+            Anyone viewing your public Froglog account can use it as a shopping list:
+          </p>
+          <dl className="froglog-guide__list">
+            <dt>Live Service</dt>
+            <dd>Comics to purchase — active pull list items</dd>
+            <dt>Completed Games</dt>
+            <dd>Comics you have already bought</dd>
+            <dt>Developer</dt>
+            <dd>Publisher (Marvel, DC, Image, etc.)</dd>
+            <dt>Genre</dt>
+            <dd>Series name</dd>
+            <dt>Platform</dt>
+            <dd>Issue number</dd>
+            <dt>Description</dt>
+            <dd>Cover variant, release date, and purchase status</dd>
+          </dl>
+          <button
+            type="button"
+            className="secondary-btn"
+            onClick={handleSyncLabels}
+            disabled={syncing}
+          >
+            {syncing ? 'Updating…' : 'Refresh Froglog labels'}
+          </button>
+          <p className="form-help">
+            Rewrites titles and descriptions on Froglog so pull list entries say what to buy.
+            Run this once to update comics added before the latest label format.
+          </p>
+        </section>
+      )}
 
       {configured && (
         <div className="panel settings-danger-zone">
