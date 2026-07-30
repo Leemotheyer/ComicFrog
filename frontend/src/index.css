@@ -129,6 +129,28 @@ a {
   margin: 0;
 }
 
+.froglog-guide {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.froglog-guide__list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 0.85rem;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.froglog-guide__list dt {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.froglog-guide__list dd {
+  margin: 0;
+}
+
 .panel {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent), var(--panel);
   border: 1px solid var(--border);

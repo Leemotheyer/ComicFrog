@@ -76,6 +76,10 @@ export function deleteComic(id, source) {
   return request(`/comics/${id}?source=${source}`, { method: 'DELETE' });
 }
 
+export function syncFroglogLabels() {
+  return request('/comics/sync-froglog-labels', { method: 'POST' });
+}
+
 export function importLocgComic(url) {
   return request('/locg/import', {
     method: 'POST',
