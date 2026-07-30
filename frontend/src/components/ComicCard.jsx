@@ -4,14 +4,20 @@ import { formatDate } from '../utils/format';
 
 export default function ComicCard({ comic, viewMode, onPurchase, onDelete }) {
   const [showPurchase, setShowPurchase] = useState(false);
+  const [purchasing, setPurchasing] = useState(false);
   const [price, setPrice] = useState('');
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().slice(0, 10));
 
   async function handlePurchase(event) {
     event.preventDefault();
-    await onPurchase(comic.id, Number(price), purchaseDate);
-    setShowPurchase(false);
-    setPrice('');
+    setPurchasing(true);
+    try {
+      await onPurchase(comic.id, Number(price), purchaseDate);
+      setShowPurchase(false);
+      setPrice('');
+    } finally {
+      setPurchasing(false);
+    }
   }
 
   return (
@@ -121,10 +127,12 @@ export default function ComicCard({ comic, viewMode, onPurchase, onDelete }) {
               />
             </label>
             <div className="form-actions">
-              <button type="button" className="ghost-btn" onClick={() => setShowPurchase(false)}>
+              <button type="button" className="ghost-btn" onClick={() => setShowPurchase(false)} disabled={purchasing}>
                 Cancel
               </button>
-              <button type="submit" className="primary-btn">Confirm Purchase</button>
+              <button type="submit" className="primary-btn" disabled={purchasing}>
+                {purchasing ? 'Saving…' : 'Confirm Purchase'}
+              </button>
             </div>
           </form>
         )}

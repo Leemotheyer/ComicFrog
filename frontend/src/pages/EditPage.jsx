@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { fetchComics, updateComic } from '../api';
 import ComicForm from '../components/ComicForm';
+import { useComicsRefresh } from '../context/ComicsRefreshContext';
 import { useToast } from '../context/ToastContext';
 
 export default function EditPage() {
   const { source, id } = useParams();
   const navigate = useNavigate();
   const { push } = useToast();
+  const { bumpRefresh } = useComicsRefresh();
   const [comic, setComic] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -26,8 +28,9 @@ export default function EditPage() {
     setSubmitting(true);
     try {
       await updateComic(id, source, form);
+      bumpRefresh();
       push('Comic updated', 'success');
-      navigate('/');
+      navigate('/', { replace: true, state: { refreshAt: Date.now() } });
     } catch (err) {
       push(err.message, 'error');
     } finally {

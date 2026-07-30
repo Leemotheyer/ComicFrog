@@ -1,8 +1,16 @@
-export default function ConfirmDialog({ open, title, message, confirmLabel = 'Confirm', onConfirm, onCancel }) {
+export default function ConfirmDialog({
+  open,
+  title,
+  message,
+  confirmLabel = 'Confirm',
+  busy = false,
+  onConfirm,
+  onCancel,
+}) {
   if (!open) return null;
 
   return (
-    <div className="dialog-backdrop" role="presentation" onClick={onCancel}>
+    <div className="dialog-backdrop" role="presentation" onClick={busy ? undefined : onCancel}>
       <div
         className="dialog panel"
         role="dialog"
@@ -13,9 +21,16 @@ export default function ConfirmDialog({ open, title, message, confirmLabel = 'Co
         <h2 id="confirm-title">{title}</h2>
         <p>{message}</p>
         <div className="form-actions">
-          <button type="button" className="ghost-btn" onClick={onCancel}>Cancel</button>
-          <button type="button" className="primary-btn danger-btn" onClick={onConfirm}>
-            {confirmLabel}
+          <button type="button" className="ghost-btn" onClick={onCancel} disabled={busy}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="primary-btn danger-btn"
+            onClick={onConfirm}
+            disabled={busy}
+          >
+            {busy ? 'Working…' : confirmLabel}
           </button>
         </div>
       </div>

@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { loginFroglog, logoutFroglog, syncFroglogLabels, testFroglogConnection } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useComicsRefresh } from '../context/ComicsRefreshContext';
 import { useToast } from '../context/ToastContext';
 
 export default function SettingsPage() {
   const { configured, loading, username, apiUrl, setUsername, setApiUrl, setConfigured, clearConfigured } = useAuth();
   const { push } = useToast();
+  const { bumpRefresh } = useComicsRefresh();
   const [password, setPassword] = useState('');
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -46,6 +48,7 @@ export default function SettingsPage() {
     setSyncing(true);
     try {
       const result = await syncFroglogLabels();
+      bumpRefresh();
       push(`Updated ${result.updated} Froglog ${result.updated === 1 ? 'entry' : 'entries'}`, 'success');
     } catch (err) {
       push(err.message, 'error');

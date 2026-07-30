@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createComic, importLocgComic } from '../api';
 import ComicForm from '../components/ComicForm';
+import { useComicsRefresh } from '../context/ComicsRefreshContext';
 import { useToast } from '../context/ToastContext';
 
 const EMPTY_FORM = {
@@ -19,6 +20,7 @@ const EMPTY_FORM = {
 export default function AddPage() {
   const navigate = useNavigate();
   const { push } = useToast();
+  const { bumpRefresh } = useComicsRefresh();
   const [submitting, setSubmitting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [locgUrl, setLocgUrl] = useState('');
@@ -63,8 +65,9 @@ export default function AddPage() {
     setSubmitting(true);
     try {
       await createComic(form);
+      bumpRefresh();
       push('Added to pull list', 'success');
-      navigate('/');
+      navigate('/', { replace: true, state: { refreshAt: Date.now() } });
     } catch (err) {
       push(err.message, 'error');
     } finally {
